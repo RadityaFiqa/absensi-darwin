@@ -105,10 +105,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
               CLOCK IN
             </span>
             <span className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 tabular-nums mt-0.5">
-              {formatTimeString(attendance?.check_in_time)}
+              {formatTimeString(attendance?.check_in_time || attendance?.first_check_in_time)}
             </span>
             <span className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-              {attendance?.check_in_time ? 'Hadir' : 'Absen'}
+              {attendance?.check_in_time || attendance?.first_check_in_time ? 'Hadir' : 'Absen'}
             </span>
           </Card>
 
