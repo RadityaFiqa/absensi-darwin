@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { MapPin, ArrowLeft, CheckCircle2, Navigation } from 'lucide-react';
 import Card from '@/components/UI/Card';
 import Button from '@/components/UI/Button';
+import Input from '@/components/UI/Input';
 import Toast from '@/components/Toast';
 import { LOCATION_OPTIONS } from '@/constants';
 import { encodeToBase64 } from '@/utils/base64';
@@ -20,6 +21,9 @@ interface ConfirmViewProps {
 
 interface ConfirmFormInput {
   locationId: string;
+  manualName?: string;
+  manualLatlng?: string;
+  manualAddress?: string;
 }
 
 export const ConfirmView: React.FC<ConfirmViewProps> = ({
@@ -34,7 +38,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { register, handleSubmit, watch } = useForm<ConfirmFormInput>({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<ConfirmFormInput>({
     defaultValues: {
       locationId: LOCATION_OPTIONS[0].id,
     },
@@ -43,7 +47,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
   const selectedLocationId = watch('locationId');
   const selectedLocation = LOCATION_OPTIONS.find((loc) => loc.id === selectedLocationId) || LOCATION_OPTIONS[0];
 
-  const onSubmit = async () => {
+  const onSubmit = async (data: ConfirmFormInput) => {
     if (!token) {
       setError('Sesi Anda telah kedaluwarsa. Silakan masuk kembali.');
       return;
@@ -52,14 +56,25 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
     setIsLoading(true);
     setError(null);
 
-    const locationStr = selectedLocation.address;
+    let locationStr = '';
+    let latlngStr = '';
+
+    if (data.locationId === 'manual') {
+      locationStr = data.manualAddress || '';
+      latlngStr = data.manualLatlng || '';
+    } else {
+      const selectedLoc = LOCATION_OPTIONS.find((loc) => loc.id === data.locationId) || LOCATION_OPTIONS[0];
+      locationStr = selectedLoc.address;
+      latlngStr = selectedLoc.latlng;
+    }
+
     const base64Location = encodeToBase64(locationStr);
     const udid = getOrCreateUDID();
     const inOutVal = actionType === 'check_out' ? 2 : 1;
 
     try {
       const payload = {
-        latlng: selectedLocation.latlng,
+        latlng: latlngStr,
         verification_id: verificationId,
         in_out: inOutVal,
         location_type: '1',
@@ -157,36 +172,66 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
                     {loc.name}
                   </option>
                 ))}
+                <option value="manual">✍️ Input Lokasi Manual</option>
               </select>
             </div>
           </div>
 
-          {/* Details Card */}
-          <Card className="bg-zinc-50 dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-4 shadow-inner">
-            <div className="flex gap-3">
-              <Navigation className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h4 className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                  Garis Lintang & Bujur (GPS)
-                </h4>
-                <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-mono">
-                  {selectedLocation.latlng}
-                </p>
-              </div>
+          {/* Conditional Manual Inputs */}
+          {selectedLocationId === 'manual' && (
+            <div className="flex flex-col gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-top duration-200">
+              <Input
+                label="Koordinat GPS (Lat,Lng)"
+                placeholder="Contoh: -2.641100,115.335046"
+                error={errors.manualLatlng?.message}
+                {...register('manualLatlng', {
+                  required: selectedLocationId === 'manual' ? 'Koordinat GPS wajib diisi' : false,
+                  pattern: {
+                    value: /^-?\d+\.\d+,-?\d+\.\d+$/,
+                    message: 'Format harus: latitude,longitude (tanpa spasi)',
+                  },
+                })}
+              />
+              <Input
+                label="Alamat Detail"
+                type="textarea"
+                placeholder="Masukkan alamat lengkap lokasi..."
+                error={errors.manualAddress?.message}
+                {...register('manualAddress', {
+                  required: selectedLocationId === 'manual' ? 'Alamat detail wajib diisi' : false,
+                })}
+              />
             </div>
+          )}
 
-            <div className="flex gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-900">
-              <MapPin className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h4 className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                  Alamat Presensi
-                </h4>
-                <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 whitespace-pre-line leading-relaxed">
-                  {selectedLocation.address}
-                </p>
+          {/* Details Card */}
+          {selectedLocationId !== 'manual' && (
+            <Card className="bg-zinc-50 dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-4 shadow-inner">
+              <div className="flex gap-3">
+                <Navigation className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                    Garis Lintang & Bujur (GPS)
+                  </h4>
+                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-mono">
+                    {selectedLocation.latlng}
+                  </p>
+                </div>
               </div>
-            </div>
-          </Card>
+
+              <div className="flex gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-900">
+                <MapPin className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                    Alamat Presensi
+                  </h4>
+                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 whitespace-pre-line leading-relaxed">
+                    {selectedLocation.address}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
         </form>
       </div>
 

@@ -5,14 +5,16 @@ export const useCamera = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const startCamera = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
     setIsLoading(true);
     setError(null);
     
-    // Stop any existing stream
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
+    // Stop any existing stream using ref to avoid state-trigger dependencies
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
 
     try {
@@ -26,6 +28,7 @@ export const useCamera = () => {
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = mediaStream;
       setStream(mediaStream);
 
       if (videoRef.current) {
@@ -49,17 +52,18 @@ export const useCamera = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [stream]);
+  }, []);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
+    setStream(null);
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, [stream]);
+  }, []);
 
   const capturePhoto = useCallback((): string | null => {
     if (!videoRef.current) return null;
