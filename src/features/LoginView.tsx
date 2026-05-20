@@ -85,7 +85,7 @@ export const LoginView: React.FC = () => {
               className="py-4 text-sm"
               leftIcon={<QrCode className="w-5 h-5" />}
             >
-              Pindai QR Absensi
+              Pindai QR Login
             </Button>
 
             {!showManual && (
