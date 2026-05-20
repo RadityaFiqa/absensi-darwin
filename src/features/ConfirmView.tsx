@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { MapPin, ArrowLeft, CheckCircle2, Navigation } from 'lucide-react';
-import Card from '@/components/UI/Card';
-import Button from '@/components/UI/Button';
-import Input from '@/components/UI/Input';
-import Toast from '@/components/Toast';
-import { LOCATION_OPTIONS } from '@/constants';
-import { encodeToBase64 } from '@/utils/base64';
-import { getOrCreateUDID } from '@/utils/udid';
-import { useAuth } from '@/hooks/useAuth';
-import attendanceService from '@/services/attendance.service';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { MapPin, ArrowLeft, CheckCircle2, Navigation } from "lucide-react";
+import Card from "@/components/UI/Card";
+import Button from "@/components/UI/Button";
+import Input from "@/components/UI/Input";
+import Toast from "@/components/Toast";
+import { LOCATION_OPTIONS } from "@/constants";
+import { encodeToBase64 } from "@/utils/base64";
+import { getOrCreateUDID } from "@/utils/udid";
+import { useAuth } from "@/hooks/useAuth";
+import attendanceService from "@/services/attendance.service";
 
 interface ConfirmViewProps {
   verificationId: string;
   selfieBase64: string;
-  actionType: 'check_in' | 'check_out';
+  actionType: "check_in" | "check_out";
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -38,48 +38,57 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<ConfirmFormInput>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<ConfirmFormInput>({
     defaultValues: {
       locationId: LOCATION_OPTIONS[0].id,
     },
   });
 
-  const selectedLocationId = watch('locationId');
-  const selectedLocation = LOCATION_OPTIONS.find((loc) => loc.id === selectedLocationId) || LOCATION_OPTIONS[0];
+  const selectedLocationId = watch("locationId");
+  const selectedLocation =
+    LOCATION_OPTIONS.find((loc) => loc.id === selectedLocationId) ||
+    LOCATION_OPTIONS[0];
 
   const onSubmit = async (data: ConfirmFormInput) => {
     if (!token) {
-      setError('Sesi Anda telah kedaluwarsa. Silakan masuk kembali.');
+      setError("Sesi Anda telah kedaluwarsa. Silakan masuk kembali.");
       return;
     }
 
     setIsLoading(true);
     setError(null);
 
-    let locationStr = '';
-    let latlngStr = '';
+    let locationStr = "";
+    let latlngStr = "";
 
-    if (data.locationId === 'manual') {
-      locationStr = data.manualAddress || '';
-      latlngStr = data.manualLatlng || '';
+    if (data.locationId === "manual") {
+      locationStr = data.manualAddress || "";
+      latlngStr = data.manualLatlng || "";
     } else {
-      const selectedLoc = LOCATION_OPTIONS.find((loc) => loc.id === data.locationId) || LOCATION_OPTIONS[0];
+      const selectedLoc =
+        LOCATION_OPTIONS.find((loc) => loc.id === data.locationId) ||
+        LOCATION_OPTIONS[0];
       locationStr = selectedLoc.address;
       latlngStr = selectedLoc.latlng;
     }
 
     const base64Location = encodeToBase64(locationStr);
     const udid = getOrCreateUDID();
-    const inOutVal = actionType === 'check_out' ? 2 : 1;
+    const inOutVal = actionType === "check_out" ? 2 : 1;
 
     try {
       const payload = {
         latlng: latlngStr,
         verification_id: verificationId,
         in_out: inOutVal,
-        location_type: '1',
+        location_type: "1",
         location: base64Location,
-        message: '',
+        message: "",
         udid: udid,
         token: token,
       };
@@ -92,19 +101,22 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
           onSuccess();
         }, 2200);
       } else {
-        setError(response.error || 'Gagal merekam data absensi. Silakan hubungi admin.');
+        setError(
+          response.error || "Gagal merekam data absensi. Silakan hubungi admin."
+        );
       }
     } catch (err: any) {
-      setError(err.message || 'Gagal mengirimkan data presensi.');
+      setError(err.message || "Gagal mengirimkan data presensi.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const actionText = actionType === 'check_out' ? 'Clock Out' : 'Clock In';
-  const actionColor = actionType === 'check_out'
-    ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/20'
-    : 'text-blue-500 bg-blue-50 dark:bg-blue-950/20';
+  const actionText = actionType === "check_out" ? "Clock Out" : "Clock In";
+  const actionColor =
+    actionType === "check_out"
+      ? "text-rose-500 bg-rose-50 dark:bg-rose-950/20"
+      : "text-blue-500 bg-blue-50 dark:bg-blue-950/20";
 
   if (showSuccess) {
     return (
@@ -117,7 +129,8 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
             Absensi Berhasil!
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-[280px] mx-auto leading-relaxed">
-            Data presensi {actionText} Anda telah sukses tercatat pada server Perum BULOG.
+            Data presensi {actionText} Anda telah sukses tercatat pada server
+            Perum BULOG.
           </p>
         </div>
       </div>
@@ -140,23 +153,36 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Konfirmasi Absensi</h1>
-            <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5">Langkah Terakhir Presensi</p>
+            <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+              Konfirmasi Absensi
+            </h1>
+            <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5">
+              Langkah Terakhir Presensi
+            </p>
           </div>
         </div>
 
         {/* Capture Frame Display */}
         <div className="mt-6 flex flex-col items-center gap-4">
           <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-zinc-200 dark:border-zinc-800 shadow-md">
-            <img src={selfieBase64} alt="Selfie Verification" className="w-full h-full object-cover scale-x-[-1]" />
+            <img
+              src={selfieBase64}
+              alt="Selfie Verification"
+              className="w-full h-full object-cover scale-x-[-1]"
+            />
           </div>
-          <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${actionColor}`}>
+          <div
+            className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${actionColor}`}
+          >
             {actionText}
           </div>
         </div>
 
         {/* Form Selection */}
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-5">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="mt-8 flex flex-col gap-5"
+        >
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-wider uppercase">
               PILIH LOKASI KANTOR/GUDANG
@@ -164,7 +190,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
             <div className="relative flex items-center">
               <MapPin className="absolute left-4 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
               <select
-                {...register('locationId')}
+                {...register("locationId")}
                 className="w-full rounded-2xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 py-4 pl-11 pr-4 focus:border-blue-500 focus:ring-blue-500/20 appearance-none cursor-pointer font-bold"
               >
                 {LOCATION_OPTIONS.map((loc) => (
@@ -178,34 +204,50 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
           </div>
 
           {/* Conditional Manual Inputs */}
-          {selectedLocationId === 'manual' && (
+          {selectedLocationId === "manual" && (
             <div className="flex flex-col gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-top duration-200">
               <Input
                 label="Koordinat GPS (Lat,Lng)"
                 placeholder="Contoh: -2.641100,115.335046"
                 error={errors.manualLatlng?.message}
-                {...register('manualLatlng', {
-                  required: selectedLocationId === 'manual' ? 'Koordinat GPS wajib diisi' : false,
+                {...register("manualLatlng", {
+                  required:
+                    selectedLocationId === "manual"
+                      ? "Koordinat GPS wajib diisi"
+                      : false,
                   pattern: {
                     value: /^-?\d+\.\d+,-?\d+\.\d+$/,
-                    message: 'Format harus: latitude,longitude (tanpa spasi)',
+                    message: "Format harus: latitude,longitude (tanpa spasi)",
                   },
                 })}
               />
-              <Input
-                label="Alamat Detail"
-                type="textarea"
-                placeholder="Masukkan alamat lengkap lokasi..."
-                error={errors.manualAddress?.message}
-                {...register('manualAddress', {
-                  required: selectedLocationId === 'manual' ? 'Alamat detail wajib diisi' : false,
-                })}
-              />
+              <div className="w-full flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 tracking-wide">
+                  Alamat Detail
+                </label>
+                <textarea
+                  placeholder="Masukkan alamat lengkap lokasi..."
+                  rows={3}
+                  className={`w-full rounded-2xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-blue-500 focus:ring-blue-500/20 py-3 px-4 resize-none ${
+                    errors.manualAddress
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : ''
+                  }`}
+                  {...register('manualAddress', {
+                    required: selectedLocationId === 'manual' ? 'Alamat detail wajib diisi' : false,
+                  })}
+                />
+                {errors.manualAddress?.message && (
+                  <span className="text-xs font-semibold text-red-500 pl-1">
+                    {errors.manualAddress.message}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
           {/* Details Card */}
-          {selectedLocationId !== 'manual' && (
+          {selectedLocationId !== "manual" && (
             <Card className="bg-zinc-50 dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-4 shadow-inner">
               <div className="flex gap-3">
                 <Navigation className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -8,7 +8,18 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className = '', label, error, leftIcon, rightIcon, type = 'text', ...props }, ref) => {
+  (
+    {
+      className = "",
+      label,
+      error,
+      leftIcon,
+      rightIcon,
+      type = "text",
+      ...props
+    },
+    ref
+  ) => {
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
@@ -22,28 +33,20 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               {leftIcon}
             </span>
           )}
-          {type === 'textarea' ? (
-            <textarea
-              ref={ref}
-              className={`w-full rounded-2xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-blue-500 focus:ring-blue-500/20 py-3.5 ${
-                leftIcon ? 'pl-11' : 'pl-4'
-              } ${rightIcon ? 'pr-11' : 'pr-4'} ${
-                error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
-              } ${className}`}
-              {...props}
-            />
-          ) : (
-            <input
-              ref={ref}
-              type={type}
-              className={`w-full rounded-2xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-blue-500 focus:ring-blue-500/20 py-3.5 ${
-                leftIcon ? 'pl-11' : 'pl-4'
-              } ${rightIcon ? 'pr-11' : 'pr-4'} ${
-                error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
-              } ${className}`}
-              {...props}
-            />
-          )}
+
+          <input
+            ref={ref}
+            type={type}
+            className={`w-full rounded-2xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-blue-500 focus:ring-blue-500/20 py-3.5 ${
+              leftIcon ? "pl-11" : "pl-4"
+            } ${rightIcon ? "pr-11" : "pr-4"} ${
+              error
+                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                : ""
+            } ${className}`}
+            {...props}
+          />
+
           {rightIcon && (
             <span className="absolute right-4 text-zinc-400 dark:text-zinc-500">
               {rightIcon}
@@ -60,5 +63,5 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";
 export default Input;

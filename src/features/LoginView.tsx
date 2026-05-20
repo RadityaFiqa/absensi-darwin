@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { KeyRound, QrCode, LogIn } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import Card from '@/components/UI/Card';
-import Input from '@/components/UI/Input';
-import Button from '@/components/UI/Button';
-import QrScanner from '@/components/QrScanner';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { KeyRound, QrCode, LogIn } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Card from "@/components/UI/Card";
+import Input from "@/components/UI/Input";
+import Button from "@/components/UI/Button";
+import QrScanner from "@/components/QrScanner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LoginFormInput {
   token: string;
@@ -18,12 +18,16 @@ export const LoginView: React.FC = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [showManual, setShowManual] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInput>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormInput>();
 
   const onManualSubmit = (data: LoginFormInput) => {
     const success = loginWithToken(data.token);
     if (success) {
-      router.replace('/');
+      router.replace("/");
     }
   };
 
@@ -31,7 +35,7 @@ export const LoginView: React.FC = () => {
     setShowScanner(false);
     const success = await loginWithQr(qrcode);
     if (success) {
-      router.replace('/');
+      router.replace("/");
     }
   };
 
@@ -40,10 +44,10 @@ export const LoginView: React.FC = () => {
       {/* BRAND EMBLEM */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent tracking-tight">
-          ABSENSI ENTERPRISE
+          ABSENSI
         </h1>
         <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-1">
-          Perum BULOG Kantor Wilayah Kalsel
+          Perum BULOG
         </p>
       </div>
 
@@ -55,9 +59,12 @@ export const LoginView: React.FC = () => {
       ) : (
         <Card className="flex flex-col gap-6 shadow-xl border-zinc-100 dark:border-zinc-900 bg-white dark:bg-zinc-950/80 backdrop-blur-md">
           <div className="flex flex-col gap-2">
-            <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Selamat Datang</h2>
+            <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+              Selamat Datang
+            </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Silakan pindai kode QR kehadiran Anda, atau input token autentikasi Anda secara manual.
+              Silakan pindai kode QR kehadiran Anda, atau input token
+              autentikasi Anda secara manual.
             </p>
           </div>
 
@@ -107,7 +114,7 @@ export const LoginView: React.FC = () => {
                 placeholder="Masukkan token absensi Anda..."
                 leftIcon={<KeyRound className="w-4 h-4" />}
                 error={errors.token?.message}
-                {...register('token', { required: 'Token wajib diisi' })}
+                {...register("token", { required: "Token wajib diisi" })}
               />
 
               <div className="flex gap-2">
