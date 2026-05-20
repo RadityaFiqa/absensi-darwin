@@ -1,5 +1,5 @@
-import React from 'react';
-import { Camera, X, RefreshCw } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Camera, X, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import Button from './UI/Button';
 
 interface CameraPreviewProps {
@@ -11,6 +11,9 @@ interface CameraPreviewProps {
   title: string;
   subTitle: string;
   onRetry?: () => void;
+  facingMode?: 'user' | 'environment';
+  onToggleFacingMode?: () => void;
+  onGalleryImport?: (base64: string) => void;
 }
 
 export const CameraPreview: React.FC<CameraPreviewProps> = ({
@@ -22,9 +25,46 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
   title,
   subTitle,
   onRetry,
+  facingMode = 'user',
+  onToggleFacingMode,
+  onGalleryImport,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleGalleryClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const size = Math.min(img.width, img.height);
+          const sx = (img.width - size) / 2;
+          const sy = (img.height - size) / 2;
+          ctx.drawImage(img, sx, sy, size, size, 0, 0, 400, 400);
+          const base64 = canvas.toDataURL('image/jpeg', 0.85);
+          if (onGalleryImport) {
+            onGalleryImport(base64);
+          }
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
-    <div className="relative flex flex-col items-center justify-between min-h-[460px] w-full bg-zinc-950 rounded-3xl overflow-hidden border border-zinc-900 p-6 shadow-2xl">
+    <div className="relative flex flex-col items-center justify-between min-h-[460px] w-full bg-zinc-950 rounded-3xl overflow-hidden border border-zinc-900 p-6 shadow-2xl animate-in fade-in duration-200">
       {/* Header Info */}
       <div className="w-full flex items-center justify-between z-10">
         <div>
@@ -57,7 +97,7 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover scale-x-[-1]"
+              className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
             />
             {/* Pulsing Face Guide */}
             <div className="absolute inset-0 border-[6px] border-transparent rounded-full pointer-events-none ring-4 ring-blue-500/30 ring-offset-4 ring-offset-zinc-950/20 animate-pulse" />
@@ -65,8 +105,24 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
         )}
       </div>
 
-      {/* Action Button */}
-      <div className="w-full flex justify-center z-10">
+      {/* Shutter Panel Control Strip */}
+      <div className="w-full flex items-center justify-between px-4 z-10">
+        {/* Toggle facingMode */}
+        {onToggleFacingMode ? (
+          <button
+            type="button"
+            onClick={onToggleFacingMode}
+            disabled={!!error || isLoading}
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all active:scale-90 hover:scale-105 disabled:opacity-50 cursor-pointer"
+            title="Ganti Kamera"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="w-12 h-12" />
+        )}
+
+        {/* Shutter Capture Button */}
         <button
           onClick={onCapture}
           disabled={!!error || isLoading}
@@ -74,6 +130,30 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
         >
           <Camera className="w-6 h-6" />
         </button>
+
+        {/* Gallery Import */}
+        {onGalleryImport ? (
+          <div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={handleGalleryClick}
+              disabled={isLoading}
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all active:scale-90 hover:scale-105 disabled:opacity-50 cursor-pointer"
+              title="Pilih dari Galeri"
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="w-12 h-12" />
+        )}
       </div>
     </div>
   );

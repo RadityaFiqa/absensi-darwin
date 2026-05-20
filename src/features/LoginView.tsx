@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyRound, QrCode, LogIn } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Card from '@/components/UI/Card';
 import Input from '@/components/UI/Input';
 import Button from '@/components/UI/Button';
@@ -12,6 +13,7 @@ interface LoginFormInput {
 }
 
 export const LoginView: React.FC = () => {
+  const router = useRouter();
   const { loginWithQr, loginWithToken, isLoading, error, setError } = useAuth();
   const [showScanner, setShowScanner] = useState(false);
   const [showManual, setShowManual] = useState(false);
@@ -19,12 +21,18 @@ export const LoginView: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInput>();
 
   const onManualSubmit = (data: LoginFormInput) => {
-    loginWithToken(data.token);
+    const success = loginWithToken(data.token);
+    if (success) {
+      router.replace('/');
+    }
   };
 
   const handleQrScanSuccess = async (qrcode: string) => {
     setShowScanner(false);
-    await loginWithQr(qrcode);
+    const success = await loginWithQr(qrcode);
+    if (success) {
+      router.replace('/');
+    }
   };
 
   return (

@@ -11,17 +11,18 @@ interface SelfieViewProps {
 }
 
 export const SelfieView: React.FC<SelfieViewProps> = ({ onSuccess, onCancel, actionType }) => {
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const { videoRef, startCamera, stopCamera, capturePhoto, error: cameraError } = useCamera();
   const { verifyFace, isLoading: isVerifying, error: verifyError, reset: resetVerify } = useFaceVerification();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Open front camera immediately on mount
-    startCamera('user');
+    // Open camera according to current facingMode
+    startCamera(facingMode);
     return () => {
       stopCamera();
     };
-  }, [startCamera, stopCamera]);
+  }, [startCamera, stopCamera, facingMode]);
 
   // Handle errors coming from verification service
   useEffect(() => {
@@ -45,6 +46,18 @@ export const SelfieView: React.FC<SelfieViewProps> = ({ onSuccess, onCancel, act
     }
   };
 
+  const handleGalleryImport = async (base64Image: string) => {
+    resetVerify();
+    const verificationId = await verifyFace(base64Image);
+    if (verificationId) {
+      onSuccess(verificationId, base64Image);
+    }
+  };
+
+  const toggleFacingMode = () => {
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
+  };
+
   const handleToastClose = () => {
     setToastMessage(null);
     resetVerify();
@@ -65,8 +78,11 @@ export const SelfieView: React.FC<SelfieViewProps> = ({ onSuccess, onCancel, act
         isLoading={isVerifying}
         error={cameraError || verifyError}
         title={`Verifikasi Wajah (${titleAction})`}
-        subTitle="Sejajarkan wajah Anda pada area lingkaran"
-        onRetry={() => startCamera('user')}
+        subTitle={facingMode === 'user' ? 'Sejajarkan wajah Anda pada area lingkaran' : 'Arahkan kamera belakang ke wajah subjek'}
+        onRetry={() => startCamera(facingMode)}
+        facingMode={facingMode}
+        onToggleFacingMode={toggleFacingMode}
+        onGalleryImport={handleGalleryImport}
       />
     </div>
   );

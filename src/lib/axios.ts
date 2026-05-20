@@ -44,6 +44,13 @@ axiosInstance.interceptors.response.use(
   (error) => {
     let message = 'Terjadi kesalahan sistem';
     if (error.response) {
+      // 401 Unauthorized: Clear session and throw to login
+      if (error.response.status === 401) {
+        if (typeof window !== 'undefined') {
+          useAuthStore.getState().logout();
+          window.location.href = '/login';
+        }
+      }
       // Server replied with non-2xx status
       const data = error.response.data;
       message = data?.error || data?.message || `Error code: ${error.response.status}`;

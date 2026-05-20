@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get('absensi_token')?.value;
+  const token = request.cookies.get('absensi_token')?.value || request.cookies.get('token_absensi')?.value;
   const { pathname } = request.nextUrl;
 
   // Paths requiring authentication

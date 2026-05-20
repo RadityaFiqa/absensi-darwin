@@ -21,7 +21,7 @@ const deleteCookie = (name: string) => {
 export const useAuthStore = create<AuthState>((set) => {
   const getInitialToken = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('absensi_token');
+      return localStorage.getItem('absensi_token') || localStorage.getItem('token_absensi');
     }
     return null;
   };
@@ -35,10 +35,14 @@ export const useAuthStore = create<AuthState>((set) => {
       if (typeof window !== 'undefined') {
         if (token) {
           localStorage.setItem('absensi_token', token);
+          localStorage.setItem('token_absensi', token);
           setCookie('absensi_token', token);
+          setCookie('token_absensi', token);
         } else {
           localStorage.removeItem('absensi_token');
+          localStorage.removeItem('token_absensi');
           deleteCookie('absensi_token');
+          deleteCookie('token_absensi');
         }
       }
       set({ token, isAuthenticated: !!token });
@@ -46,7 +50,9 @@ export const useAuthStore = create<AuthState>((set) => {
     logout: () => {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('absensi_token');
+        localStorage.removeItem('token_absensi');
         deleteCookie('absensi_token');
+        deleteCookie('token_absensi');
       }
       set({ token: null, isAuthenticated: false });
     },
