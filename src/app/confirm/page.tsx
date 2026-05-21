@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function ConfirmPage() {
   const router = useRouter();
-  const { verificationId, selfieBase64, actionType, clearWorkflow } = useAttendanceStore();
+  const { verificationId, selfieBase64, actionType, checkinId, clearWorkflow } = useAttendanceStore();
   const [mounted, setMounted] = useState(false);
   const { isAuthenticated } = useAuth();
 
@@ -41,6 +41,7 @@ export default function ConfirmPage() {
       verificationId={verificationId}
       selfieBase64={selfieBase64}
       actionType={actionType}
+      checkinId={checkinId}
       onBack={() => router.push('/selfie')}
       onSuccess={() => {
         clearWorkflow();

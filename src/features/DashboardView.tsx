@@ -1,26 +1,33 @@
-import React from 'react';
-import { LogOut, Calendar, Clock, RefreshCw, ChevronRight } from 'lucide-react';
-import Card from '@/components/UI/Card';
-import Button from '@/components/UI/Button';
-import { useClock } from '@/hooks/useClock';
-import { useAttendance } from '@/hooks/useAttendance';
-import { useAuth } from '@/hooks/useAuth';
-import { formatTimeString } from '@/utils/format';
+import React from "react";
+import { LogOut, Calendar, Clock, RefreshCw, ChevronRight } from "lucide-react";
+import Card from "@/components/UI/Card";
+import Button from "@/components/UI/Button";
+import { useClock } from "@/hooks/useClock";
+import { useAttendance } from "@/hooks/useAttendance";
+import { useAuth } from "@/hooks/useAuth";
+import { formatTimeString } from "@/utils/format";
 
 interface DashboardViewProps {
-  onAction: (stage: 'check_in' | 'check_out') => void;
+  onAction: (stage: "check_in" | "check_out", checkinId?: string) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
   const { time, date } = useClock();
-  const { attendance, isLoading, error, isValidating, forceRevalidate } = useAttendance();
+  const { attendance, isLoading, error, isValidating, forceRevalidate } =
+    useAttendance();
   const { logout } = useAuth();
 
-  const nextStage = attendance?.button_stage === 'check_out' ? 'check_out' : 'check_in';
-  const buttonText = nextStage === 'check_out' ? 'Clock Out' : 'Clock In';
-  const buttonGradient = nextStage === 'check_out'
-    ? 'from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 focus:ring-red-500 shadow-red-500/20'
-    : 'from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:ring-blue-500 shadow-blue-500/20';
+  const nextStage =
+    attendance?.button_stage === "check_out" ? "check_out" : "check_in";
+  const buttonText = nextStage === "check_out" ? "Clock Out" : "Clock In";
+  const buttonGradient =
+    nextStage === "check_out"
+      ? "from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 focus:ring-red-500 shadow-red-500/20"
+      : "from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:ring-blue-500 shadow-blue-500/20";
+
+  const showButton = !(
+    attendance?.last_action === 2 && nextStage === "check_in"
+  );
 
   if (isLoading) {
     return (
@@ -59,7 +66,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
               onClick={() => forceRevalidate()}
               disabled={isValidating}
               className={`p-2.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer ${
-                isValidating ? 'animate-spin text-blue-500' : ''
+                isValidating ? "animate-spin text-blue-500" : ""
               }`}
               title="Refresh Data"
             >
@@ -85,7 +92,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
         <Card className="mt-6 flex flex-col items-center justify-center py-6 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-150 dark:border-zinc-900 shadow-inner">
           <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 mb-1">
             <Clock className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Jam Digital</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">
+              Jam Digital
+            </span>
           </div>
           <span className="text-3xl font-extrabold text-zinc-950 dark:text-zinc-50 tabular-nums tracking-tight">
             {time}
@@ -105,10 +114,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
               CLOCK IN
             </span>
             <span className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 tabular-nums mt-0.5">
-              {formatTimeString(attendance?.check_in_time || attendance?.first_check_in_time)}
+              {formatTimeString(
+                attendance?.check_in_time || attendance?.first_check_in_time
+              )}
             </span>
             <span className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-              {attendance?.check_in_time || attendance?.first_check_in_time ? 'Hadir' : 'Absen'}
+              {attendance?.check_in_time || attendance?.first_check_in_time
+                ? "Hadir"
+                : "Absen"}
             </span>
           </Card>
 
@@ -122,44 +135,106 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
               {formatTimeString(attendance?.check_out_time)}
             </span>
             <span className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-              {attendance?.check_out_time ? 'Pulang' : 'Belum'}
+              {attendance?.check_out_time ? "Pulang" : "Belum"}
             </span>
           </Card>
         </div>
 
         {/* Audit Meta Logs */}
-        {attendance && (
+        {attendance && attendance?.last_action != 2 && (
           <div className="mt-8 flex flex-col gap-3.5 p-4 rounded-3xl border border-zinc-150 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/20">
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-zinc-400">ID Absensi</span>
               <span className="text-zinc-700 dark:text-zinc-300 font-mono text-[10px]">
-                {attendance.id || '-'}
+                {attendance.id || "-"}
               </span>
             </div>
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-zinc-400">Hari Kerja</span>
-              <span className="text-zinc-700 dark:text-zinc-300">{attendance.date || '-'}</span>
+              <span className="text-zinc-700 dark:text-zinc-300">
+                {attendance.date || "-"}
+              </span>
             </div>
+
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-zinc-400">Tahap Berikutnya</span>
               <span className="text-zinc-700 dark:text-zinc-300 font-extrabold text-[9px] uppercase tracking-wider">
-                {attendance.button_stage === 'check_out' ? 'Clock Out' : 'Clock In'}
+                {attendance.button_stage === "check_out"
+                  ? "Clock Out"
+                  : "Clock In"}
               </span>
+            </div>
+          </div>
+        )}
+
+        {attendance && attendance?.last_action == 2 && (
+          <div className="mt-8 p-5 rounded-3xl border border-emerald-200 dark:border-emerald-900 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/30 dark:to-zinc-950/10 flex flex-col items-center text-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shadow-sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-7 h-7 text-emerald-600 dark:text-emerald-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                Absensi Hari Ini Selesai 🎉
+              </h3>
+
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-[260px]">
+                Terima kasih sudah bekerja keras hari ini. Semoga harimu
+                menyenangkan dan jangan lupa istirahat 😊
+              </p>
+            </div>
+
+            <div className="w-full mt-2 rounded-2xl bg-white/70 dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800 p-3 flex flex-col gap-2">
+              <div className="flex justify-between items-center text-[11px] font-medium">
+                <span className="text-zinc-400">ID Absensi</span>
+                <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                  {attendance.id || "-"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-[11px] font-medium">
+                <span className="text-zinc-400">Tanggal</span>
+                <span className="text-zinc-700 dark:text-zinc-300">
+                  {attendance.date || "-"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-[11px] font-medium">
+                <span className="text-zinc-400">Status</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wide">
+                  Completed
+                </span>
+              </div>
             </div>
           </div>
         )}
       </div>
 
       {/* Sticky Bottom Actions Bar */}
-      <div className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto p-4 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-100 dark:border-zinc-900/60 z-20">
-        <Button
-          onClick={() => onAction(nextStage)}
-          className={`w-full py-4 text-sm bg-gradient-to-r shadow-lg ${buttonGradient}`}
-          rightIcon={<ChevronRight className="w-4 h-4" />}
-        >
-          {buttonText}
-        </Button>
-      </div>
+      {showButton && (
+        <div className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto p-4 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-100 dark:border-zinc-900/60 z-20">
+          <Button
+            onClick={() => onAction(nextStage, attendance?.id)}
+            className={`w-full py-4 text-sm bg-gradient-to-r shadow-lg ${buttonGradient}`}
+            rightIcon={<ChevronRight className="w-4 h-4" />}
+          >
+            {buttonText}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

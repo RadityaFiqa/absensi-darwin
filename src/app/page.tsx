@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { setActionType } = useAttendanceStore();
+  const { setActionType, setCheckinId } = useAttendanceStore();
   const [mounted, setMounted] = useState(false);
   const { isAuthenticated } = useAuth();
 
@@ -34,8 +34,9 @@ export default function DashboardPage() {
 
   return (
     <DashboardView
-      onAction={(stage) => {
+      onAction={(stage, checkinId) => {
         setActionType(stage);
+        setCheckinId(checkinId || null);
         router.push('/selfie');
       }}
     />

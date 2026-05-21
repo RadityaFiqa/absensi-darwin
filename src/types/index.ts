@@ -36,6 +36,7 @@ export interface CheckInPayload {
   message: string;
   udid: string;
   token: string;
+  checkin_id?: string;
 }
 
 export interface CheckInResponse {

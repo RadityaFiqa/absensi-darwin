@@ -4,7 +4,7 @@ import axios from 'axios';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { latlng, verification_id, in_out, location_type, location, message, udid, token } = body;
+    const { latlng, verification_id, in_out, location_type, location, message, udid, token, checkin_id } = body;
 
     if (!token || !verification_id) {
       return NextResponse.json({ status: 0, error: 'Token and verification_id are required' }, { status: 400 });
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     const response = await axios.post(
       targetUrl,
-      { latlng, verification_id, in_out, location_type, location, message, udid, token },
+      { latlng, verification_id, in_out, location_type, location, message, udid, token, checkin_id },
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,

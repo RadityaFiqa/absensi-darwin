@@ -10,11 +10,13 @@ import { encodeToBase64 } from "@/utils/base64";
 import { getOrCreateUDID } from "@/utils/udid";
 import { useAuth } from "@/hooks/useAuth";
 import attendanceService from "@/services/attendance.service";
+import { CheckInPayload } from "@/types";
 
 interface ConfirmViewProps {
   verificationId: string;
   selfieBase64: string;
   actionType: "check_in" | "check_out";
+  checkinId?: string | null;
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -30,6 +32,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
   verificationId,
   selfieBase64,
   actionType,
+  checkinId,
   onBack,
   onSuccess,
 }) => {
@@ -82,7 +85,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
     const inOutVal = actionType === "check_out" ? 2 : 1;
 
     try {
-      const payload = {
+      const payload: CheckInPayload = {
         latlng: latlngStr,
         verification_id: verificationId,
         in_out: inOutVal,
@@ -91,6 +94,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
         message: "",
         udid: udid,
         token: token,
+        ...(inOutVal === 2 && checkinId ? { checkin_id: checkinId } : {}),
       };
 
       const response = await attendanceService.submitCheckIn(payload);
@@ -230,11 +234,14 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
                   rows={3}
                   className={`w-full rounded-2xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-blue-500 focus:ring-blue-500/20 py-3 px-4 resize-none ${
                     errors.manualAddress
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                      : ''
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
                   }`}
-                  {...register('manualAddress', {
-                    required: selectedLocationId === 'manual' ? 'Alamat detail wajib diisi' : false,
+                  {...register("manualAddress", {
+                    required:
+                      selectedLocationId === "manual"
+                        ? "Alamat detail wajib diisi"
+                        : false,
                   })}
                 />
                 {errors.manualAddress?.message && (
