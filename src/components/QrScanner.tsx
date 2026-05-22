@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { RefreshCw, X } from 'lucide-react';
+import { RefreshCw, X, Image as ImageIcon } from 'lucide-react';
 import Button from './UI/Button';
 
 interface QrScannerProps {
@@ -11,8 +11,10 @@ interface QrScannerProps {
 export const QrScanner: React.FC<QrScannerProps> = ({ onScanSuccess, onCancel }) => {
   const [error, setError] = useState<string | null>(null);
   const [permissionError, setPermissionError] = useState(false);
-  const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
+  const [isScanningFile, setIsScanningFile] = useState(false);
+  const html5QrcodeRef = useRef<HTMLVideoElement | any | null>(null);
   const qrRegionId = 'qr-reader-element';
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const startScanner = async () => {
     setError(null);
@@ -68,6 +70,53 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScanSuccess, onCancel })
     }
   };
 
+  const handleGalleryClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setIsScanningFile(true);
+
+    try {
+      // 1. Stop camera scanning if active
+      if (html5QrcodeRef.current) {
+        try {
+          await html5QrcodeRef.current.stop();
+        } catch (err) {
+          // ignore stop error
+        }
+      }
+
+      // 2. Setup reader
+      let html5Qrcode = html5QrcodeRef.current;
+      if (!html5Qrcode) {
+        html5Qrcode = new Html5Qrcode(qrRegionId);
+        html5QrcodeRef.current = html5Qrcode;
+      }
+
+      // 3. Scan file
+      const decodedText = await html5Qrcode.scanFile(file, false);
+
+      // 4. Trigger success callback
+      onScanSuccess(decodedText);
+    } catch (err: any) {
+      console.error('Failed to decode QR code from file:', err);
+      setError('Gagal membaca QR Code dari galeri. Pastikan gambar memiliki QR Code yang jelas.');
+
+      // Attempt to restart camera
+      startScanner();
+    } finally {
+      setIsScanningFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   useEffect(() => {
     startScanner();
 
@@ -100,8 +149,13 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScanSuccess, onCancel })
 
       {/* Reader Box */}
       <div className="relative w-full aspect-square max-w-[280px] rounded-3xl overflow-hidden border-2 border-zinc-800 bg-zinc-900/60 flex items-center justify-center my-6 shadow-2xl">
+        <div
+          id={qrRegionId}
+          className={`w-full h-full object-cover [&_video]:object-cover [&_video]:w-full [&_video]:h-full ${error ? 'hidden' : 'block'}`}
+        />
+
         {error ? (
-          <div className="flex flex-col items-center justify-center text-center p-6 gap-3">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 gap-3">
             <p className="text-[11px] font-bold text-red-400">{error}</p>
             {permissionError && (
               <Button size="sm" variant="secondary" onClick={startScanner} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>
@@ -110,28 +164,42 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScanSuccess, onCancel })
             )}
           </div>
         ) : (
-          <>
-            {/* The qr scanner attaches here */}
+          /* Scanning Overlay Guideline Box */
+          <div className="absolute inset-12 border-2 border-blue-500 rounded-2xl pointer-events-none ring-4 ring-blue-500/10">
+            {/* Scan Laser Animation */}
             <div
-              id={qrRegionId}
-              className="w-full h-full object-cover [&_video]:object-cover [&_video]:w-full [&_video]:h-full"
+              className="w-full h-0.5 bg-blue-500 shadow-md shadow-blue-400 absolute left-0"
+              style={{
+                animation: 'scan-line 2s ease-in-out infinite',
+              }}
             />
-            {/* Scanning Overlay Guideline Box */}
-            <div className="absolute inset-12 border-2 border-blue-500 rounded-2xl pointer-events-none ring-4 ring-blue-500/10">
-              {/* Scan Laser Animation */}
-              <div
-                className="w-full h-0.5 bg-blue-500 shadow-md shadow-blue-400 absolute left-0"
-                style={{
-                  animation: 'scan-line 2s ease-in-out infinite',
-                }}
-              />
-            </div>
-          </>
+          </div>
         )}
       </div>
 
-      <div className="text-[9px] font-extrabold text-zinc-500 animate-pulse tracking-widest uppercase">
-        Memindai...
+      {/* Bottom Controls */}
+      <div className="w-full flex flex-col items-center gap-4 z-10">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+        />
+
+        <button
+          type="button"
+          onClick={handleGalleryClick}
+          disabled={isScanningFile}
+          className="w-full py-3.5 px-4 rounded-2xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-300 hover:text-white text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          <ImageIcon className="w-4 h-4 text-blue-500" />
+          {isScanningFile ? 'Membaca QR...' : 'Pilih dari Galeri'}
+        </button>
+
+        <div className="text-[9px] font-extrabold text-zinc-500 animate-pulse tracking-widest uppercase">
+          {isScanningFile ? 'Mendekode...' : 'Memindai...'}
+        </div>
       </div>
     </div>
   );
