@@ -12,7 +12,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScanSuccess, onCancel })
   const [error, setError] = useState<string | null>(null);
   const [permissionError, setPermissionError] = useState(false);
   const [isScanningFile, setIsScanningFile] = useState(false);
-  const html5QrcodeRef = useRef<HTMLVideoElement | any | null>(null);
+  const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
   const qrRegionId = 'qr-reader-element';
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -123,7 +123,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScanSuccess, onCancel })
     return () => {
       if (html5QrcodeRef.current) {
         try {
-          html5QrcodeRef.current.stop().catch((e) => console.log('Cleanup qr reader error:', e));
+          html5QrcodeRef.current.stop().catch((e: any) => console.log('Cleanup qr reader error:', e));
         } catch (e) {
           // ignore
         }
