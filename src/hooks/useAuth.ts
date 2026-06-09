@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useAuthStore from '@/store/useAuthStore';
 import authService from '@/services/auth.service';
+import axiosInstance from '@/lib/axios';
 
 export const useAuth = () => {
   const store = useAuthStore();
@@ -25,34 +26,66 @@ export const useAuth = () => {
 
       if (response.status === 1 && token) {
         store.setToken(token);
+        if ((response as any).user) {
+          store.setUser((response as any).user);
+        }
         return true;
       } else {
         setError(response.error || 'Autentikasi gagal. Kode QR tidak valid atau kedaluwarsa.');
         return false;
       }
     } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan koneksi sistem.');
+      setError(err.message || 'Terjadi kesalahan koneksi sistem atau user tidak aktif.');
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loginWithToken = (token: string): boolean => {
+  const loginWithToken = async (token: string): Promise<boolean> => {
+    setIsLoading(true);
     setError(null);
     const cleanToken = token.trim();
     if (!cleanToken) {
       setError('Token tidak boleh kosong.');
+      setIsLoading(false);
       return false;
     }
-    store.setToken(cleanToken);
-    return true;
+    try {
+      // Call token validation endpoint
+      const response = await axiosInstance.post('/api/auth/validate', { token: cleanToken });
+      if (response.data && response.data.success) {
+        store.setToken(cleanToken);
+        if (response.data.user) {
+          store.setUser(response.data.user);
+        }
+        return true;
+      } else {
+        setError(response.data?.message || 'Autentikasi token gagal.');
+        return false;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Token tidak valid atau user tidak aktif.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await axiosInstance.post('/api/auth/logout');
+    } catch (err) {
+      console.error('Failed to log logout activity:', err);
+    }
+    store.logout();
   };
 
   return {
     token: store.token,
+    user: store.user,
     isAuthenticated: store.isAuthenticated,
-    logout: store.logout,
+    logout,
     loginWithQr,
     loginWithToken,
     isLoading,

@@ -3,6 +3,7 @@ import { useAuth } from './useAuth';
 import swrFetcher from '@/lib/fetcher';
 import { AttendanceResponse } from '@/types';
 import attendanceService from '@/services/attendance.service';
+import useAuthStore from '@/store/useAuthStore';
 
 export const useAttendance = () => {
   const { token } = useAuth();
@@ -15,6 +16,11 @@ export const useAttendance = () => {
       refreshInterval: 30000, // Auto revalidate every 30s as requested
       revalidateOnFocus: true,
       errorRetryCount: 3,
+      onSuccess: (res) => {
+        if (res && (res as any).user) {
+          useAuthStore.getState().setUser((res as any).user);
+        }
+      },
     }
   );
 
@@ -22,6 +28,9 @@ export const useAttendance = () => {
     if (!token) return;
     try {
       const fresh = await attendanceService.getDashboard(token);
+      if (fresh && (fresh as any).user) {
+        useAuthStore.getState().setUser((fresh as any).user);
+      }
       await mutate(fresh, { revalidate: false });
     } catch (err) {
       console.error('Failed to manually revalidate dashboard:', err);

@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { MapPin, ArrowLeft, CheckCircle2, Navigation } from "lucide-react";
 import Card from "@/components/UI/Card";
 import Button from "@/components/UI/Button";
 import Input from "@/components/UI/Input";
 import Toast from "@/components/Toast";
-import { LOCATION_OPTIONS } from "@/constants";
+import axiosInstance from "@/lib/axios";
 import { encodeToBase64 } from "@/utils/base64";
 import { getOrCreateUDID } from "@/utils/udid";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +28,15 @@ interface ConfirmFormInput {
   manualAddress?: string;
 }
 
+interface DBLocation {
+  id: number;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  is_active: boolean;
+}
+
 export const ConfirmView: React.FC<ConfirmViewProps> = ({
   verificationId,
   selfieBase64,
@@ -40,22 +49,47 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [locations, setLocations] = useState<DBLocation[]>([]);
+
+  // Fetch active locations on mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await axiosInstance.get('/api/locations');
+        if (response.data && response.data.success) {
+          setLocations(response.data.locations);
+        }
+      } catch (err) {
+        console.error('Gagal mengambil data lokasi:', err);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ConfirmFormInput>({
     defaultValues: {
-      locationId: LOCATION_OPTIONS[0].id,
+      locationId: "",
     },
   });
 
+  // Set default selection when locations are loaded
+  useEffect(() => {
+    if (locations.length > 0) {
+      setValue("locationId", String(locations[0].id));
+    }
+  }, [locations, setValue]);
+
   const selectedLocationId = watch("locationId");
   const selectedLocation =
-    LOCATION_OPTIONS.find((loc) => loc.id === selectedLocationId) ||
-    LOCATION_OPTIONS[0];
+    locations.find((loc) => String(loc.id) === selectedLocationId) ||
+    locations[0] ||
+    null;
 
   const onSubmit = async (data: ConfirmFormInput) => {
     if (!token) {
@@ -74,10 +108,12 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
       latlngStr = data.manualLatlng || "";
     } else {
       const selectedLoc =
-        LOCATION_OPTIONS.find((loc) => loc.id === data.locationId) ||
-        LOCATION_OPTIONS[0];
-      locationStr = selectedLoc.address;
-      latlngStr = selectedLoc.latlng;
+        locations.find((loc) => String(loc.id) === data.locationId) ||
+        locations[0];
+      if (selectedLoc) {
+        locationStr = selectedLoc.address;
+        latlngStr = `${selectedLoc.latitude},${selectedLoc.longitude}`;
+      }
     }
 
     const base64Location = encodeToBase64(locationStr);
@@ -197,8 +233,8 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
                 {...register("locationId")}
                 className="w-full rounded-2xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 py-4 pl-11 pr-4 focus:border-blue-500 focus:ring-blue-500/20 appearance-none cursor-pointer font-bold"
               >
-                {LOCATION_OPTIONS.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={String(loc.id)}>
                     {loc.name}
                   </option>
                 ))}
@@ -254,7 +290,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
           )}
 
           {/* Details Card */}
-          {selectedLocationId !== "manual" && (
+          {selectedLocationId !== "manual" && selectedLocation && (
             <Card className="bg-zinc-50 dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-4 shadow-inner">
               <div className="flex gap-3">
                 <Navigation className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
@@ -263,7 +299,7 @@ export const ConfirmView: React.FC<ConfirmViewProps> = ({
                     Garis Lintang & Bujur (GPS)
                   </h4>
                   <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-mono">
-                    {selectedLocation.latlng}
+                    {selectedLocation.latitude}, {selectedLocation.longitude}
                   </p>
                 </div>
               </div>

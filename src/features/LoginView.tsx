@@ -24,8 +24,8 @@ export const LoginView: React.FC = () => {
     formState: { errors },
   } = useForm<LoginFormInput>();
 
-  const onManualSubmit = (data: LoginFormInput) => {
-    const success = loginWithToken(data.token);
+  const onManualSubmit = async (data: LoginFormInput) => {
+    const success = await loginWithToken(data.token);
     if (success) {
       router.replace("/");
     }

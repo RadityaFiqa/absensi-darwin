@@ -13,13 +13,19 @@ const axiosInstance = axios.create({
   },
 });
 
-// Request Interceptor: Auto inject token from Zustand
+import { getOrCreateUDID } from '@/utils/udid';
+
+// Request Interceptor: Auto inject token and UDID from client
 axiosInstance.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && config.headers) {
       const token = useAuthStore.getState().token;
-      if (token && config.headers) {
+      if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
+      }
+      const udid = getOrCreateUDID();
+      if (udid) {
+        config.headers['X-UDID'] = udid;
       }
     }
     return config;
@@ -44,8 +50,8 @@ axiosInstance.interceptors.response.use(
   (error) => {
     let message = 'Terjadi kesalahan sistem';
     if (error.response) {
-      // 401 Unauthorized: Clear session and throw to login
-      if (error.response.status === 401) {
+      // 401 Unauthorized or 403 Forbidden: Clear session and throw to login
+      if (error.response.status === 401 || error.response.status === 403) {
         if (typeof window !== 'undefined') {
           useAuthStore.getState().logout();
           window.location.href = '/login';

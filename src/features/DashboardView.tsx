@@ -15,7 +15,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
   const { time, date } = useClock();
   const { attendance, isLoading, error, isValidating, forceRevalidate } =
     useAttendance();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   const nextStage =
     attendance?.button_stage === "check_out" ? "check_out" : "check_in";
@@ -54,11 +55,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
       <div>
         <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-900">
           <div>
-            <h1 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+            <h1 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-505 uppercase tracking-widest">
               Aplikasi Absensi
             </h1>
             <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
-              Halo, Rekan BULOG
+              Halo, {user?.name || 'Rekan BULOG'}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -110,7 +111,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
           {/* Card Clock In */}
           <Card className="relative overflow-hidden bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-2">
             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
-            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-505 uppercase tracking-widest">
               CLOCK IN
             </span>
             <span className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 tabular-nums mt-0.5">
@@ -128,7 +129,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
           {/* Card Clock Out */}
           <Card className="relative overflow-hidden bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-2">
             <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
-            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-505 uppercase tracking-widest">
               CLOCK OUT
             </span>
             <span className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 tabular-nums mt-0.5">
@@ -191,7 +192,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
                 Absensi Hari Ini Selesai 🎉
               </h3>
 
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-[260px]">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-[260px] mx-auto">
                 Terima kasih sudah bekerja keras hari ini. Semoga harimu
                 menyenangkan dan jangan lupa istirahat 😊
               </p>
@@ -225,7 +226,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
 
       {/* Sticky Bottom Actions Bar */}
       {showButton && (
-        <div className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto p-4 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-100 dark:border-zinc-900/60 z-20">
+        <div className={`fixed ${isAdmin ? 'bottom-20' : 'bottom-0'} left-0 right-0 w-full max-w-md mx-auto p-4 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-100 dark:border-zinc-900/60 z-20`}>
           <Button
             onClick={() => onAction(nextStage, attendance?.id)}
             className={`w-full py-4 text-sm bg-gradient-to-r shadow-lg ${buttonGradient}`}
