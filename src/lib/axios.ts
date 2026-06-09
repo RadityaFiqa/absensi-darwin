@@ -54,7 +54,9 @@ axiosInstance.interceptors.response.use(
       if (error.response.status === 401 || error.response.status === 403) {
         if (typeof window !== 'undefined') {
           useAuthStore.getState().logout();
-          window.location.href = '/login';
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
       }
       // Server replied with non-2xx status

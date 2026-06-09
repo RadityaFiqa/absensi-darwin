@@ -24,6 +24,17 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error('API Auth Validate Error:', error.message);
+
+    // Log failed login attempt if it's an AuthForbiddenError (unregistered/inactive user)
+    if (error.statusCode === 403 && error.employee_no) {
+      try {
+        const { ip, userAgent } = getClientDetails(request);
+        await logActivity(error.employee_no, 'LOGIN', 'Gagal login: User tidak terdaftar atau tidak aktif', ip, userAgent);
+      } catch (logErr) {
+        console.error('Failed to log failed login attempt:', logErr);
+      }
+    }
+
     const status = error.statusCode || 500;
     return NextResponse.json(
       { success: false, message: error.message || 'Autentikasi gagal' },

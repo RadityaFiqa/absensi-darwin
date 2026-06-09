@@ -50,6 +50,17 @@ export async function POST(request: Request) {
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('API Auth Proxy Error:', error.message);
+
+    // Log failed login attempt if it's an AuthForbiddenError (unregistered/inactive user)
+    if (error.statusCode === 403 && error.employee_no) {
+      try {
+        const { ip, userAgent } = getClientDetails(request);
+        await logActivity(error.employee_no, 'LOGIN', 'Gagal login: User tidak terdaftar atau tidak aktif', ip, userAgent);
+      } catch (logErr) {
+        console.error('Failed to log failed login attempt:', logErr);
+      }
+    }
+
     const status = error.statusCode || error.response?.status || 500;
     const errorData = error.response?.data || { success: false, message: error.message || 'Terjadi kesalahan pada server proxy' };
     return NextResponse.json(errorData, { status });

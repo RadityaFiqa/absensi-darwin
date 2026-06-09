@@ -20,11 +20,13 @@ export interface LocalUser extends DarwinboxUser {
  */
 export class AuthForbiddenError extends Error {
   statusCode: number;
+  employee_no?: string;
 
-  constructor(message: string) {
+  constructor(message: string, employee_no?: string) {
     super(message);
     this.name = 'AuthForbiddenError';
     this.statusCode = 403;
+    this.employee_no = employee_no;
   }
 }
 
@@ -66,12 +68,12 @@ export async function validateAndSyncUser(token: string, udid: string): Promise<
     );
 
     if (dbRes.rowCount === 0) {
-      throw new AuthForbiddenError('User tidak terdaftar atau tidak aktif');
+      throw new AuthForbiddenError('User tidak terdaftar atau tidak aktif', employee_no);
     }
 
     const localUser: LocalUser = dbRes.rows[0];
     if (!localUser.is_active) {
-      throw new AuthForbiddenError('User tidak terdaftar atau tidak aktif');
+      throw new AuthForbiddenError('User tidak terdaftar atau tidak aktif', employee_no);
     }
 
     // Update/Sync local user data with Darwinbox details
