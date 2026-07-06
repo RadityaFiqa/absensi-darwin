@@ -13,11 +13,12 @@ export interface LocalUser extends DarwinboxUser {
   id: number;
   role: 'ADMIN' | 'SUPERVISOR' | 'EMPLOYEE';
   is_active: boolean;
-  default_image?: string | null;
   cutoff_clockin?: string;
   cutoff_checkout?: string;
   auto_attendance?: boolean;
   preferred_location_id?: number | null;
+  has_image?: boolean;
+  default_image?: string | null;
 }
 
 /**
@@ -89,8 +90,12 @@ export async function validateAndSyncUser(token: string, udid: string): Promise<
       [name, email, department, designation, employee_no]
     );
 
+    const { default_image, ...userData } = localUser;
+    const has_image = default_image !== null && default_image !== '';
+
     return {
-      ...localUser,
+      ...userData,
+      has_image,
       name,
       email,
       department,

@@ -9,11 +9,11 @@ export interface User {
   designation?: string;
   role: 'ADMIN' | 'SUPERVISOR' | 'EMPLOYEE';
   is_active: boolean;
-  default_image?: string | null;
   cutoff_clockin?: string;
   cutoff_checkout?: string;
   auto_attendance?: boolean;
   preferred_location_id?: number | null;
+  has_image?: boolean;
 }
 
 interface AuthState {
