@@ -18,31 +18,18 @@ async function decodeQrCode(base64Data: string): Promise<string> {
       
       const image = await Jimp.read(buffer);
       
-      // Preprocess image: convert transparent pixels to white, high contrast binarization
+      // Preprocess image: convert transparent/semi-transparent pixels to solid white
       const data = image.bitmap.data;
       for (let i = 0; i < data.length; i += 4) {
         const alpha = data[i + 3];
-        if (alpha < 128) {
-          // Transparent -> White
+        if (alpha < 200) {
+          // Transparent / Semi-transparent -> Solid White
           data[i] = 255;
           data[i + 1] = 255;
           data[i + 2] = 255;
           data[i + 3] = 255;
         } else {
-          // Opaque -> threshold luminance to solid black or white
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const luminance = (r + g + b) / 3;
-          if (luminance < 128) {
-            data[i] = 0;
-            data[i + 1] = 0;
-            data[i + 2] = 0;
-          } else {
-            data[i] = 255;
-            data[i + 1] = 255;
-            data[i + 2] = 255;
-          }
+          // Ensure opaque
           data[i + 3] = 255;
         }
       }
