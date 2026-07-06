@@ -1,6 +1,6 @@
 export async function register() {
-  // Ensure this only runs on the Node.js server-side environment
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
+  // Ensure this only runs on the Node.js server-side environment and NOT during the build phase
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NEXT_PHASE !== 'phase-production-build') {
     try {
       const { query } = await import('./lib/db');
       
