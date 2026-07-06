@@ -1,11 +1,12 @@
-import React from "react";
-import { LogOut, Calendar, Clock, RefreshCw, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { LogOut, Calendar, Clock, RefreshCw, ChevronRight, User, Upload } from "lucide-react";
 import Card from "@/components/UI/Card";
 import Button from "@/components/UI/Button";
 import { useClock } from "@/hooks/useClock";
 import { useAttendance } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
 import { formatTimeString } from "@/utils/format";
+import axiosInstance from "@/lib/axios";
 
 interface DashboardViewProps {
   onAction: (stage: "check_in" | "check_out", checkinId?: string) => void;
@@ -17,6 +18,98 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
     useAttendance();
   const { logout, user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
+
+  const [settings, setSettings] = useState<{
+    cutoff_clockin: string;
+    cutoff_checkout: string;
+    auto_attendance: boolean;
+    has_image: boolean;
+  }>({
+    cutoff_clockin: '07:30',
+    cutoff_checkout: '17:00',
+    auto_attendance: false,
+    has_image: false,
+  });
+
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Fetch settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await axiosInstance.get('/api/users/settings');
+        if (response.data && response.data.success) {
+          setSettings(response.data.settings);
+        }
+      } catch (err) {
+        console.error('Gagal memuat pengaturan absensi otomatis:', err);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Str = reader.result as string;
+      setSettingsLoading(true);
+      try {
+        const response = await axiosInstance.post('/api/users/settings', {
+          default_image: base64Str
+        });
+        if (response.data && response.data.success) {
+          setSettings(prev => ({ ...prev, has_image: true }));
+          showToast('Foto default berhasil disimpan!');
+        }
+      } catch (err) {
+        console.error('Gagal menyimpan foto default:', err);
+        showToast('Gagal mengunggah foto default.');
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const updateSettingField = async (field: 'cutoff_clockin' | 'cutoff_checkout', value: string) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+    try {
+      await axiosInstance.post('/api/users/settings', {
+        [field]: value
+      });
+    } catch (err) {
+      console.error(`Gagal memperbarui ${field}:`, err);
+    }
+  };
+
+  const toggleAutoAttendance = async () => {
+    if (!settings.has_image) {
+      showToast('Harap unggah foto default terlebih dahulu.');
+      return;
+    }
+    const nextVal = !settings.auto_attendance;
+    setSettings(prev => ({ ...prev, auto_attendance: nextVal }));
+    try {
+      await axiosInstance.post('/api/users/settings', {
+        auto_attendance: nextVal
+      });
+      showToast(nextVal ? 'Absen otomatis diaktifkan!' : 'Absen otomatis dinonaktifkan.');
+    } catch (err) {
+      console.error('Gagal memperbarui absen otomatis:', err);
+      setSettings(prev => ({ ...prev, auto_attendance: !nextVal }));
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
 
   const nextStage =
     attendance?.button_stage === "check_out" ? "check_out" : "check_in";
@@ -83,6 +176,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
           </div>
         </div>
 
+        {toastMessage && (
+          <div className="mt-4 p-3.5 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-bold leading-normal shadow-md animate-in fade-in slide-in-from-top-2 duration-300">
+            {toastMessage}
+          </div>
+        )}
+
         {error && (
           <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-400 text-xs font-bold leading-normal flex items-center justify-between">
             <span>{error}</span>
@@ -91,10 +190,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
 
         {/* Real-time Local Clock Card */}
         <Card className="mt-6 flex flex-col items-center justify-center py-6 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-150 dark:border-zinc-900 shadow-inner">
-          <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 mb-1">
+          <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-505 mb-1">
             <Clock className="w-3.5 h-3.5" />
             <span className="text-[10px] font-bold uppercase tracking-wider">
-              Jam Digital
+              Jam Digital (Makassar)
             </span>
           </div>
           <span className="text-3xl font-extrabold text-zinc-950 dark:text-zinc-50 tabular-nums tracking-tight">
@@ -111,7 +210,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
           {/* Card Clock In */}
           <Card className="relative overflow-hidden bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-2">
             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
-            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-505 uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest">
               CLOCK IN
             </span>
             <span className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 tabular-nums mt-0.5">
@@ -129,7 +228,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
           {/* Card Clock Out */}
           <Card className="relative overflow-hidden bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 flex flex-col gap-2">
             <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
-            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-505 uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest">
               CLOCK OUT
             </span>
             <span className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 tabular-nums mt-0.5">
@@ -141,9 +240,96 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
           </Card>
         </div>
 
+        {/* AUTO ATTENDANCE SETTINGS CARD */}
+        <Card className="mt-6 flex flex-col gap-4 bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-900 shadow-sm">
+          <div className="border-b border-zinc-100 dark:border-zinc-900 pb-2">
+            <h3 className="text-xs font-extrabold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
+              Absen Otomatis
+            </h3>
+            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-relaxed mt-0.5">
+              Kelola batas cut-off kehadiran dan upload selfie default
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between text-xs font-bold">
+            <span className="text-zinc-500">Status Selfie Default</span>
+            {settings.has_image ? (
+              <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                ✓ Aktif / Terunggah
+              </span>
+            ) : (
+              <span className="text-amber-500 flex items-center gap-1 animate-pulse">
+                ⚠ Belum Upload
+              </span>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <label htmlFor="default-photo-upload" className="flex-1">
+              <div className="w-full py-2.5 px-4 text-center rounded-2xl bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors flex items-center justify-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" />
+                {settings.has_image ? 'Ganti Selfie Default' : 'Upload Selfie Default'}
+              </div>
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              id="default-photo-upload"
+              className="hidden"
+              onChange={handlePhotoUpload}
+              disabled={settingsLoading}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-wider">Batas Clock In</label>
+              <input
+                type="time"
+                value={settings.cutoff_clockin}
+                onChange={(e) => updateSettingField('cutoff_clockin', e.target.value)}
+                className="py-2.5 px-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-transparent text-xs text-zinc-850 dark:text-zinc-150 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-wider">Batas Clock Out</label>
+              <input
+                type="time"
+                value={settings.cutoff_checkout}
+                onChange={(e) => updateSettingField('cutoff_checkout', e.target.value)}
+                className="py-2.5 px-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-transparent text-xs text-zinc-850 dark:text-zinc-150 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 pt-3">
+            <div className="flex flex-col max-w-[70%]">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Status Absen Otomatis</span>
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-relaxed mt-0.5">
+                Otomatis clock-in/out saat waktu cut-off terlewati
+              </span>
+            </div>
+            <button
+              onClick={toggleAutoAttendance}
+              disabled={!settings.has_image || settingsLoading}
+              className={`relative inline-flex h-6.5 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                settings.auto_attendance ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-850'
+              } ${!settings.has_image ? 'opacity-40 cursor-not-allowed' : ''}`}
+              title={!settings.has_image ? 'Harap upload foto default terlebih dahulu' : ''}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5.5 w-5.5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  settings.auto_attendance ? 'translate-x-5.5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </Card>
+
         {/* Audit Meta Logs */}
         {attendance && attendance?.last_action != 2 && (
-          <div className="mt-8 flex flex-col gap-3.5 p-4 rounded-3xl border border-zinc-150 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/20">
+          <div className="mt-6 flex flex-col gap-3.5 p-4 rounded-3xl border border-zinc-150 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/20">
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-zinc-400">ID Absensi</span>
               <span className="text-zinc-700 dark:text-zinc-300 font-mono text-[10px]">
@@ -169,7 +355,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
         )}
 
         {attendance && attendance?.last_action == 2 && (
-          <div className="mt-8 p-5 rounded-3xl border border-emerald-200 dark:border-emerald-900 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/30 dark:to-zinc-950/10 flex flex-col items-center text-center gap-3">
+          <div className="mt-6 p-5 rounded-3xl border border-emerald-200 dark:border-emerald-900 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/30 dark:to-zinc-950/10 flex flex-col items-center text-center gap-3">
             <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shadow-sm">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

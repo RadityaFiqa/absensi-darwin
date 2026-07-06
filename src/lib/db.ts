@@ -13,6 +13,14 @@ if (!globalPool) {
 }
 
 const pool = globalPool;
+
+// Automatically configure Makassar (GMT+8) timezone for all queries in the connection pool
+pool.on('connect', (client: any) => {
+  client.query("SET timezone = 'Asia/Makassar';").catch((err: any) => {
+    console.error('Failed to set timezone on pool connection:', err.message);
+  });
+});
+
 let dbInitialized = false;
 
 async function initDb() {
@@ -33,10 +41,28 @@ async function initDb() {
         designation VARCHAR(255),
         role VARCHAR(50) NOT NULL DEFAULT 'EMPLOYEE',
         is_active BOOLEAN NOT NULL DEFAULT true,
+        username VARCHAR(255),
+        password VARCHAR(255),
+        token VARCHAR(255),
+        udid VARCHAR(255),
+        default_image TEXT,
+        cutoff_clockin VARCHAR(5) DEFAULT '07:30',
+        cutoff_checkout VARCHAR(5) DEFAULT '17:00',
+        auto_attendance BOOLEAN DEFAULT false,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Ensure columns exist in case the table was created before
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(255)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR(255)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS token VARCHAR(255)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS udid VARCHAR(255)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS default_image TEXT');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cutoff_clockin VARCHAR(5) DEFAULT \'07:30\'');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cutoff_checkout VARCHAR(5) DEFAULT \'17:00\'');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS auto_attendance BOOLEAN DEFAULT false');
 
     // Create activity_logs table
     await client.query(`

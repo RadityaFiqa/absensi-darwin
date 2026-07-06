@@ -13,6 +13,10 @@ export interface LocalUser extends DarwinboxUser {
   id: number;
   role: 'ADMIN' | 'SUPERVISOR' | 'EMPLOYEE';
   is_active: boolean;
+  default_image?: string | null;
+  cutoff_clockin?: string;
+  cutoff_checkout?: string;
+  auto_attendance?: boolean;
 }
 
 /**
@@ -63,7 +67,7 @@ export async function validateAndSyncUser(token: string, udid: string): Promise<
 
     // Search local database
     const dbRes = await query(
-      'SELECT id, employee_no, name, email, department, designation, role, is_active FROM users WHERE employee_no = $1',
+      'SELECT id, employee_no, name, email, department, designation, role, is_active, default_image, cutoff_clockin, cutoff_checkout, auto_attendance FROM users WHERE employee_no = $1',
       [employee_no]
     );
 

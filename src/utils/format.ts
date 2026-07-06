@@ -4,6 +4,7 @@ export const formatIndonesianDate = (date: Date): string => {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: 'Asia/Makassar',
   }).format(date);
 };
 
@@ -13,6 +14,7 @@ export const formatTime = (date: Date): string => {
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
+    timeZone: 'Asia/Makassar',
   }).format(date);
 };
 
