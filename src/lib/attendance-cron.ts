@@ -1,4 +1,5 @@
 import axios from 'axios';
+import cron from 'node-cron';
 import { query } from './db';
 import { logActivity } from './logger';
 
@@ -184,18 +185,20 @@ export async function runAutoAttendanceCron() {
 
 export function startAttendanceCron() {
   const globalObj = global as any;
-  if (globalObj.attendanceCronInterval) {
-    console.log('[CRON] Background worker is already running.');
+  if (globalObj.attendanceCronTask) {
+    console.log('[CRON] Background node-cron task is already running.');
     return;
   }
 
   // Run immediately on start
   runAutoAttendanceCron();
 
-  // Run every 5 minutes (300,000 ms)
-  globalObj.attendanceCronInterval = setInterval(() => {
+  // Schedule every 5 minutes using node-cron with Asia/Makassar timezone
+  globalObj.attendanceCronTask = cron.schedule('*/5 * * * *', () => {
     runAutoAttendanceCron();
-  }, 5 * 60 * 1000);
+  }, {
+    timezone: 'Asia/Makassar'
+  });
 
-  console.log('[CRON] Background worker initialized successfully.');
+  console.log('[CRON] Background node-cron worker initialized successfully for Asia/Makassar.');
 }
