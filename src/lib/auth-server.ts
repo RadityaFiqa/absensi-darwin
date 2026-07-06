@@ -17,6 +17,7 @@ export interface LocalUser extends DarwinboxUser {
   cutoff_clockin?: string;
   cutoff_checkout?: string;
   auto_attendance?: boolean;
+  preferred_location_id?: number | null;
 }
 
 /**
@@ -67,7 +68,7 @@ export async function validateAndSyncUser(token: string, udid: string): Promise<
 
     // Search local database
     const dbRes = await query(
-      'SELECT id, employee_no, name, email, department, designation, role, is_active, default_image, cutoff_clockin, cutoff_checkout, auto_attendance FROM users WHERE employee_no = $1',
+      'SELECT id, employee_no, name, email, department, designation, role, is_active, default_image, cutoff_clockin, cutoff_checkout, auto_attendance, preferred_location_id FROM users WHERE employee_no = $1',
       [employee_no]
     );
 

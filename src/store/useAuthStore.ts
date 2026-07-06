@@ -13,6 +13,7 @@ export interface User {
   cutoff_clockin?: string;
   cutoff_checkout?: string;
   auto_attendance?: boolean;
+  preferred_location_id?: number | null;
 }
 
 interface AuthState {

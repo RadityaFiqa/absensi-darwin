@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     // 2. Retrieve user settings from database
     const dbRes = await query(
-      `SELECT default_image, cutoff_clockin, cutoff_checkout, auto_attendance 
+      `SELECT default_image, cutoff_clockin, cutoff_checkout, auto_attendance, employee_no, preferred_location_id 
        FROM users WHERE employee_no = $1`,
       [localUser.employee_no]
     );
@@ -87,12 +87,26 @@ export async function POST(request: Request) {
         console.log(`[AUTO ATTENDANCE] Triggering auto ${checkAction === 1 ? 'CLOCK IN' : 'CLOCK OUT'} for employee ${localUser.employee_no}`);
         
         try {
-          // A. Fetch first active location for coordinate pairing
-          const locRes = await query('SELECT name, latitude, longitude, address FROM locations WHERE is_active = true LIMIT 1');
-          if (locRes.rowCount === 0) {
-            throw new Error('Tidak ada lokasi aktif di database untuk melakukan auto-absen');
+          // A. Fetch location configuration (preferred or first active)
+          let defaultLoc = null;
+          if (userSettings.preferred_location_id) {
+            const locRes = await query(
+              'SELECT name, latitude, longitude, address FROM locations WHERE id = $1 AND is_active = true',
+              [userSettings.preferred_location_id]
+            );
+            if (locRes.rowCount > 0) {
+              defaultLoc = locRes.rows[0];
+            }
           }
-          const defaultLoc = locRes.rows[0];
+          
+          if (!defaultLoc) {
+            const locRes = await query('SELECT name, latitude, longitude, address FROM locations WHERE is_active = true LIMIT 1');
+            if (locRes.rowCount === 0) {
+              throw new Error('Tidak ada lokasi aktif di database untuk melakukan auto-absen');
+            }
+            defaultLoc = locRes.rows[0];
+          }
+          
           const latlng = `${defaultLoc.latitude},${defaultLoc.longitude}`;
           const locationBase64 = Buffer.from(defaultLoc.name).toString('base64');
 

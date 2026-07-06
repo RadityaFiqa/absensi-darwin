@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     const dbRes = await query(
-      `SELECT cutoff_clockin, cutoff_checkout, auto_attendance, 
+      `SELECT cutoff_clockin, cutoff_checkout, auto_attendance, preferred_location_id,
               (default_image IS NOT NULL AND default_image != '') as has_image 
        FROM users WHERE id = $1`,
       [caller.id]
@@ -28,6 +28,7 @@ export async function GET(request: Request) {
         cutoff_clockin: settings.cutoff_clockin || '07:30',
         cutoff_checkout: settings.cutoff_checkout || '17:00',
         auto_attendance: settings.auto_attendance || false,
+        preferred_location_id: settings.preferred_location_id || null,
         has_image: settings.has_image || false
       }
     });
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { cutoff_clockin, cutoff_checkout, auto_attendance, default_image } = body;
+    const { cutoff_clockin, cutoff_checkout, auto_attendance, default_image, preferred_location_id } = body;
 
     const fields: string[] = [];
     const params: any[] = [];
@@ -68,6 +69,10 @@ export async function POST(request: Request) {
       fields.push(`default_image = $${paramIndex++}`);
       params.push(default_image);
     }
+    if (preferred_location_id !== undefined) {
+      fields.push(`preferred_location_id = $${paramIndex++}`);
+      params.push(preferred_location_id === 'null' || preferred_location_id === null ? null : parseInt(preferred_location_id, 10));
+    }
 
     if (fields.length === 0) {
       return NextResponse.json({ success: false, message: 'Tidak ada data yang diupdate' }, { status: 400 });
@@ -83,7 +88,7 @@ export async function POST(request: Request) {
 
     // Return the updated settings summary
     const checkRes = await query(
-      `SELECT cutoff_clockin, cutoff_checkout, auto_attendance, 
+      `SELECT cutoff_clockin, cutoff_checkout, auto_attendance, preferred_location_id,
               (default_image IS NOT NULL AND default_image != '') as has_image 
        FROM users WHERE id = $1`,
       [caller.id]
@@ -97,6 +102,7 @@ export async function POST(request: Request) {
         cutoff_clockin: updatedSettings.cutoff_clockin || '07:30',
         cutoff_checkout: updatedSettings.cutoff_checkout || '17:00',
         auto_attendance: updatedSettings.auto_attendance || false,
+        preferred_location_id: updatedSettings.preferred_location_id || null,
         has_image: updatedSettings.has_image || false
       }
     });

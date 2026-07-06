@@ -23,30 +23,44 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
     cutoff_clockin: string;
     cutoff_checkout: string;
     auto_attendance: boolean;
+    preferred_location_id: number | null;
     has_image: boolean;
   }>({
     cutoff_clockin: '07:30',
     cutoff_checkout: '17:00',
     auto_attendance: false,
+    preferred_location_id: null,
     has_image: false,
   });
 
+  const [locations, setLocations] = useState<any[]>([]);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [debugData, setDebugData] = useState<any>(null);
 
-  // Fetch settings on mount
+  // Fetch settings and locations on mount
   useEffect(() => {
-    const loadSettings = async () => {
+    const loadSettingsAndLocations = async () => {
       try {
-        const response = await axiosInstance.get('/api/users/settings');
-        if (response.data && response.data.success) {
-          setSettings(response.data.settings);
+        const settingsRes = await axiosInstance.get('/api/users/settings');
+        if (settingsRes.data && settingsRes.data.success) {
+          setSettings(settingsRes.data.settings);
         }
       } catch (err) {
         console.error('Gagal memuat pengaturan absensi otomatis:', err);
       }
+
+      try {
+        const locationsRes = await axiosInstance.get('/api/locations');
+        if (locationsRes.data && locationsRes.data.success) {
+          setLocations(locationsRes.data.locations);
+        }
+      } catch (err) {
+        console.error('Gagal mengambil data lokasi:', err);
+      }
     };
-    loadSettings();
+    loadSettingsAndLocations();
   }, []);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,12 +89,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
     reader.readAsDataURL(file);
   };
 
-  const updateSettingField = async (field: 'cutoff_clockin' | 'cutoff_checkout', value: string) => {
+  const updateSettingField = async (field: 'cutoff_clockin' | 'cutoff_checkout' | 'preferred_location_id', value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
     try {
       await axiosInstance.post('/api/users/settings', {
         [field]: value
       });
+      showToast('Pengaturan berhasil disimpan');
     } catch (err) {
       console.error(`Gagal memperbarui ${field}:`, err);
     }
@@ -109,6 +124,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
     setTimeout(() => {
       setToastMessage(null);
     }, 3000);
+  };
+
+  const handleToggleDebug = async () => {
+    if (!showDebugInfo && !debugData) {
+      try {
+        const res = await axiosInstance.get('/api/debug/time');
+        if (res.data && res.data.success) {
+          setDebugData(res.data.debug_info);
+        }
+      } catch (err) {
+        console.error('Gagal mengambil info debug:', err);
+      }
+    }
+    setShowDebugInfo(!showDebugInfo);
   };
 
   const nextStage =
@@ -303,6 +332,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
             </div>
           </div>
 
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-wider">Lokasi Absen Otomatis</label>
+            <select
+              value={settings.preferred_location_id || ''}
+              onChange={(e) => updateSettingField('preferred_location_id', e.target.value ? parseInt(e.target.value, 10) : null)}
+              className="py-2.5 px-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-transparent text-xs text-zinc-850 dark:text-zinc-150 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="" className="text-zinc-500 dark:bg-zinc-950">-- Gunakan Lokasi Pertama Aktif --</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id} className="text-zinc-850 dark:text-zinc-150 font-medium">
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 pt-3">
             <div className="flex flex-col max-w-[70%]">
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Status Absen Otomatis</span>
@@ -324,6 +369,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onAction }) => {
                 }`}
               />
             </button>
+          </div>
+
+          {/* Debug Action Block */}
+          <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3">
+            <button
+              type="button"
+              onClick={handleToggleDebug}
+              className="w-full py-2.5 px-4 rounded-2xl bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-800/50 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {showDebugInfo ? 'Sembunyikan Debug Waktu' : 'Tampilkan Debug Waktu & Timezone'}
+            </button>
+
+            {showDebugInfo && debugData && (
+              <div className="mt-3 p-3.5 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/40 border border-zinc-150 dark:border-zinc-900 text-[10px] font-mono text-zinc-500 dark:text-zinc-400 space-y-1.5 overflow-x-auto leading-relaxed animate-in fade-in duration-200">
+                <div><strong>Server Raw:</strong> {debugData.server_raw_time}</div>
+                <div><strong>Server Local:</strong> {debugData.server_local_time}</div>
+                <div><strong>Makassar Local:</strong> {debugData.user_local_time_formatted}</div>
+                <div><strong>Parsed WITA:</strong> {debugData.parsed_makassar_time.hour}:{debugData.parsed_makassar_time.minute} ({debugData.parsed_makassar_time.total_minutes_of_day} mins)</div>
+                {debugData.auto_attendance_evaluation && (
+                  <div className="border-t border-zinc-200/60 dark:border-zinc-800/60 pt-2 mt-2 space-y-1">
+                    <div><strong>Auto Enabled:</strong> {debugData.auto_attendance_evaluation.auto_attendance_enabled ? 'Ya' : 'Tidak'}</div>
+                    <div><strong>Clock In Cutoff:</strong> {debugData.auto_attendance_evaluation.cutoff_clockin_time} ({debugData.auto_attendance_evaluation.cutoff_clockin_minutes} mins)</div>
+                    <div><strong>Clock Out Cutoff:</strong> {debugData.auto_attendance_evaluation.cutoff_checkout_time} ({debugData.auto_attendance_evaluation.cutoff_checkout_minutes} mins)</div>
+                    <div><strong>Current Time:</strong> {debugData.auto_attendance_evaluation.current_time_minutes} mins</div>
+                    <div><strong>Past Clock In Limit:</strong> {debugData.auto_attendance_evaluation.is_past_clockin_cutoff ? 'Ya' : 'Tidak'}</div>
+                    <div><strong>Past Clock Out Limit:</strong> {debugData.auto_attendance_evaluation.is_past_checkout_cutoff ? 'Ya' : 'Tidak'}</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Card>
 

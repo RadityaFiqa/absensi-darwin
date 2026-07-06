@@ -49,6 +49,7 @@ async function initDb() {
         cutoff_clockin VARCHAR(5) DEFAULT '07:30',
         cutoff_checkout VARCHAR(5) DEFAULT '17:00',
         auto_attendance BOOLEAN DEFAULT false,
+        preferred_location_id INT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
@@ -63,6 +64,7 @@ async function initDb() {
     await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cutoff_clockin VARCHAR(5) DEFAULT \'07:30\'');
     await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cutoff_checkout VARCHAR(5) DEFAULT \'17:00\'');
     await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS auto_attendance BOOLEAN DEFAULT false');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_location_id INT');
 
     // Create activity_logs table
     await client.query(`
@@ -112,6 +114,14 @@ async function initDb() {
     await client.query('COMMIT');
     dbInitialized = true;
     console.log('Database initialized successfully and migrations applied.');
+    
+    // Start background auto-attendance checker worker
+    try {
+      const { startAttendanceCron } = require('./attendance-cron');
+      startAttendanceCron();
+    } catch (cronErr: any) {
+      console.error('Failed to start auto attendance background worker:', cronErr.message);
+    }
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Database migration/initialization error:', error);
